@@ -535,9 +535,9 @@ app.get('/', (req, res) => {
                 <div class="game-icon">🚀</div>
                 <div>Among Us</div>
             </button>
-            <button class="game-card" onclick="launchGame('free-fire')">
-                <div class="game-icon">🔥</div>
-                <div>Free Fire</div>
+            <button class="game-card" onclick="launchGame('cookie-run')">
+                <div class="game-icon">🍪</div>
+                <div>Cookie Run</div>
             </button>
         </div>
         <div class="custom-url">
@@ -555,10 +555,10 @@ app.get('/', (req, res) => {
             navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err));
         }
         const GAME_URLS = {
-            'roblox': 'https://now.gg/play/roblox-corporation/5349/roblox',
-            'minecraft': 'https://now.gg/apps/mojang/2533/minecraft-trial.html',
+            'roblox': 'https://now.gg/apps/roblox-corporation/5349/roblox.html',
+            'minecraft': 'https://now.gg/apps/mojang/2476/minecraft.html',
             'among-us': 'https://now.gg/apps/innersloth-llc/4047/among-us.html',
-            'free-fire': 'https://now.gg/apps/garena-international-i/2205/free-fire.html'
+            'cookie-run': 'https://now.gg/apps/devsisters-corporation/3475/cookie-run.html'
         };
         function showStatus(message, type) {
             const statusEl = document.getElementById('statusMsg');
