@@ -8,20 +8,44 @@ const GAME_URLS = {
     'cookie-run': 'https://now.gg/apps/devsisters-corporation/3475/cookie-run.html'
 };
 
-// Initialize Scramjet
-const { ScramjetController } = $scramjetLoadController();
-const scramjet = new ScramjetController({
-    files: {
-        wasm: '/scram/scramjet.wasm.wasm',
-        all: '/scram/scramjet.all.js',
-        sync: '/scram/scramjet.sync.js',
-    },
+// Global variables
+let scramjet;
+let connection;
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Initialize Scramjet
+        const { ScramjetController } = $scramjetLoadController();
+        scramjet = new ScramjetController({
+            files: {
+                wasm: '/scram/scramjet.wasm.wasm',
+                all: '/scram/scramjet.all.js',
+                sync: '/scram/scramjet.sync.js',
+            },
+        });
+
+        await scramjet.init();
+        console.log('✅ Scramjet initialized');
+
+        // Initialize BareMux connection
+        connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+        console.log('✅ BareMux connection created');
+
+    } catch (error) {
+        console.error('❌ Initialization error:', error);
+    }
+
+    // Enter key support
+    const input = document.getElementById('sj-address');
+    if (input) {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                launchCustomUrl();
+            }
+        });
+    }
 });
-
-scramjet.init();
-
-// Initialize BareMux connection
-const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 
 function showStatus(message, type) {
     const statusEl = document.getElementById('statusMsg');
@@ -75,6 +99,11 @@ async function launchCustomUrl() {
 
 async function launchNowGG(targetUrl) {
     try {
+        if (!scramjet || !connection) {
+            showStatus('Still initializing... please wait', 'error');
+            return;
+        }
+
         showStatus('Registering service worker...', 'loading');
 
         // Register service worker
@@ -96,8 +125,13 @@ async function launchNowGG(targetUrl) {
             "/wisp/";
 
         // Set up Epoxy transport with WISP
-        if ((await connection.getTransport()) !== "/epoxy/index.mjs") {
-            await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+        try {
+            if ((await connection.getTransport()) !== "/epoxy/index.mjs") {
+                await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+            }
+        } catch (err) {
+            console.warn('Transport setup warning:', err);
+            // Continue anyway - might work
         }
 
         showStatus('Launching game...', 'loading');
@@ -107,8 +141,10 @@ async function launchNowGG(targetUrl) {
         gameUrl.searchParams.set('_cb', Date.now());
 
         // Encode URL with Scramjet
-        const sjEncode = scramjet.encodeUrl.bind(scramjet);
-        const encodedUrl = sjEncode(gameUrl.toString());
+        const encodedUrl = scramjet.encodeUrl(gameUrl.toString());
+
+        console.log('🎮 Loading game:', targetUrl);
+        console.log('🔗 Encoded URL:', encodedUrl);
 
         // Small delay for effect
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -121,20 +157,10 @@ async function launchNowGG(targetUrl) {
         frame.style.display = 'block';
         launcher.classList.add('hidden');
 
+        console.log('✅ Game launched!');
+
     } catch (error) {
-        console.error('Launch error:', error);
+        console.error('❌ Launch error:', error);
         showStatus(`Error: ${error.message}`, 'error');
     }
 }
-
-// Enter key support
-document.addEventListener('DOMContentLoaded', () => {
-    const input = document.getElementById('sj-address');
-    if (input) {
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                launchCustomUrl();
-            }
-        });
-    }
-});
