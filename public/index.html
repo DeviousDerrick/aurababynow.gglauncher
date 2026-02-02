@@ -185,9 +185,11 @@
 
     <iframe id="sj-frame"></iframe>
 
-    <script src="/scram/scramjet.all.js"></script>
-    <script src="/baremux/worker.js"></script>
-    <script src="register-sw.js"></script>
-    <script src="index.js"></script>
+   <!-- NEW CORRECT ORDER: -->
+<script src="/scram/scramjet.all.js"></script>
+<script src="/baremux/index.js"></script>      ← Added
+<script src="/epoxy/index.js"></script>        ← Added
+<script src="register-sw.js" defer></script>
+<script src="index.js" defer></script>
 </body>
 </html>
