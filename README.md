@@ -1,4 +1,4 @@
-# now.gg Launcher - Render Deployment Guide
+#A now.gg Launcher - Render Deployment Guide
 
 A sophisticated cloud gaming launcher that bypasses now.gg's proxy detection using Project Ocho. **Optimized for Render deployment**.
 
