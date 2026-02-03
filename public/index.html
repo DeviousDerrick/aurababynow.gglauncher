@@ -178,8 +178,19 @@
     <iframe id="sj-frame"></iframe>
 
     <script src="/scram/scramjet.all.js"></script>
-    <script src="/baremux/index.js"></script>
-    <script src="/epoxy/index.js"></script>
+    <script src="/baremux/index.js" type="module"></script>
+    <script src="/epoxy/index.js" type="module"></script>
+    <script>
+        // Make BareMux available globally
+        window.BareMuxLoaded = false;
+        import('/baremux/index.mjs').then(module => {
+            window.BareMux = module;
+            window.BareMuxLoaded = true;
+            console.log('✅ BareMux library loaded');
+        }).catch(err => {
+            console.error('❌ Failed to load BareMux:', err);
+        });
+    </script>
     <script src="register-sw.js" defer></script>
     <script src="index.js" defer></script>
 </body>
