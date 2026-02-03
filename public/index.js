@@ -9,11 +9,14 @@ const GAME_URLS = {
 // Global variables
 let scramjet;
 let connection;
+let isInitialized = false;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Initialize Scramjet
+        console.log('🔧 Initializing proxy...');
+        
+        // Initialize Scramjet first
         const { ScramjetController } = $scramjetLoadController();
         scramjet = new ScramjetController({
             files: {
@@ -26,12 +29,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         await scramjet.init();
         console.log('✅ Scramjet initialized');
 
+        // Wait for BareMux to load
+        let attempts = 0;
+        while (!window.BareMuxLoaded && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (!window.BareMuxLoaded) {
+            console.warn('⚠️ BareMux failed to load, continuing without it');
+            isInitialized = true;
+            return;
+        }
+
         // Initialize BareMux connection
-        connection = new BareMux.BareMuxConnection("/baremux/worker.js");
-        console.log('✅ BareMux connection created');
+        try {
+            connection = new window.BareMux.BareMuxConnection("/baremux/worker.js");
+            console.log('✅ BareMux connection created');
+        } catch (err) {
+            console.warn('⚠️ BareMux connection failed:', err);
+        }
+
+        isInitialized = true;
+        console.log('✅ All systems ready!');
 
     } catch (error) {
         console.error('❌ Initialization error:', error);
+        showStatus('Initialization failed: ' + error.message, 'error');
     }
 
     // Enter key support
@@ -48,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function showStatus(message, type) {
     const statusEl = document.getElementById('statusMsg');
     statusEl.className = `status ${type}`;
+    statusEl.style.display = 'block';
     
     if (type === 'loading') {
         statusEl.innerHTML = `<span class="spinner"></span>${message}`;
@@ -97,8 +122,9 @@ async function launchCustomUrl() {
 
 async function launchNowGG(targetUrl) {
     try {
-        if (!scramjet || !connection) {
-            showStatus('Still initializing... please wait', 'error');
+        // Check if initialized
+        if (!isInitialized || !scramjet) {
+            showStatus('Still initializing... please wait 5 seconds', 'error');
             return;
         }
 
@@ -107,29 +133,42 @@ async function launchNowGG(targetUrl) {
         // Register service worker
         try {
             await registerSW();
+            console.log('✅ Service worker ready');
         } catch (err) {
-            showStatus('Failed to register service worker!', 'error');
+            showStatus('Service worker failed!', 'error');
             console.error(err);
             return;
         }
 
+        // Wait for service worker to be fully active
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         showStatus('Setting up transport...', 'loading');
 
-        // Get WISP URL
-        const wispUrl =
-            (location.protocol === "https:" ? "wss" : "ws") +
-            "://" +
-            location.host +
-            "/wisp/";
+        // Set up transport only if connection exists
+        if (connection) {
+            try {
+                const wispUrl =
+                    (location.protocol === "https:" ? "wss" : "ws") +
+                    "://" +
+                    location.host +
+                    "/wisp/";
 
-        // Set up Epoxy transport with WISP
-        try {
-            if ((await connection.getTransport()) !== "/epoxy/index.mjs") {
-                await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+                console.log('🔗 WISP URL:', wispUrl);
+
+                // Check current transport
+                const currentTransport = await connection.getTransport();
+                console.log('📡 Current transport:', currentTransport);
+
+                // Set transport if different
+                if (currentTransport !== "/epoxy/index.mjs") {
+                    await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+                    console.log('✅ Transport set to Epoxy');
+                }
+            } catch (err) {
+                console.warn('⚠️ Transport setup warning:', err);
+                // Continue anyway
             }
-        } catch (err) {
-            console.warn('Transport setup warning:', err);
-            // Continue anyway - might work
         }
 
         showStatus('Launching game...', 'loading');
