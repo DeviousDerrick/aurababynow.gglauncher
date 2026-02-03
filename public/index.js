@@ -2,10 +2,8 @@
 
 // Game URL mappings
 const GAME_URLS = {
-    'roblox': 'https://now.gg/apps/roblox-corporation/5349/roblox.html',
-    'minecraft': 'https://now.gg/apps/mojang/2476/minecraft.html',
-    'among-us': 'https://now.gg/apps/innersloth-llc/4047/among-us.html',
-    'cookie-run': 'https://now.gg/apps/devsisters-corporation/3475/cookie-run.html'
+    'roblox': 'https://now.gg/apps/a/19900/b.html?ng_uaId=ua-5zzK1iQgEv2j0rxXNd0Kn&ng_uaSessionId=uasess-qq0CRsnhiHbsuiPRWpRDD&ng_visitId=visitid-oIz2ckXBdcHdafhK6PTRj&ng_ngReferrer=NA&ng_ngEntryPoint=https%253A%252F%252Fnow.gg%252F&ng_utmSource=&ng_utmMedium=&ng_utmCampaign=&ng_ntmSource=SearchResult&ng_userSource=organic&ng_userCampaign=&ng_userAcqVar=NA_2026_JAN_23_PST',
+    'paws-go': 'https://now.gg/apps/sofish-games/8826/paws-go.html'
 };
 
 // Global variables
