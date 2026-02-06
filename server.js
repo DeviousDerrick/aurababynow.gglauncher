@@ -68,7 +68,7 @@ fastify.setNotFoundHandler((req, reply) => {
 
 fastify.server.on("listening", () => {
   const address = fastify.server.address();
-  console.log("🚀 now.gg Launcher (Scramjet) is running!");
+  console.log("🚀 now.gg Launcher (Scramjet + BareMux) is running!");
   console.log(`   http://localhost:${address.port}`);
   console.log(`   http://${hostname()}:${address.port}`);
   console.log(
