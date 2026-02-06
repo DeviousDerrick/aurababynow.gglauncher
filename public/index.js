@@ -1,22 +1,36 @@
 "use strict";
 
-// Game URL mappings
+// Game URL mappings - simpler games with weaker detection
 const GAME_URLS = {
-    'roblox': 'https://now.gg/apps/a/19900/b.html?ng_uaId=ua-5zzK1iQgEv2j0rxXNd0Kn&ng_uaSessionId=uasess-qq0CRsnhiHbsuiPRWpRDD&ng_visitId=visitid-oIz2ckXBdcHdafhK6PTRj&ng_ngReferrer=NA&ng_ngEntryPoint=https%253A%252F%252Fnow.gg%252F&ng_utmSource=&ng_utmMedium=&ng_utmCampaign=&ng_ntmSource=SearchResult&ng_userSource=organic&ng_userCampaign=&ng_userAcqVar=NA_2026_JAN_23_PST',
-    'paws-go': 'https://now.gg/apps/sofish-games/8826/paws-go.html'
+    'roblox': 'https://now.gg/apps/a/19900/b.html',
+    'paws-go': 'https://now.gg/apps/sofish-games/8826/paws-go.html',
+    'stumble-guys': 'https://now.gg/apps/kitka-games/7999/stumble-guys.html',
+    'hill-climb': 'https://now.gg/apps/fingersoft/8363/hill-climb-racing.html'
 };
 
 // Global variables
-let scramjet;
-let connection;
-let isInitialized = false;
+let scramjet = null;
+let connection = null;
+let isReady = false;
 
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
+// Wait for BareMux to load
+async function waitForBareMux() {
+    // Try to load BareMux module
     try {
-        console.log('🔧 Initializing proxy...');
+        const BareMuxModule = await import('/baremux/index.mjs');
+        return BareMuxModule;
+    } catch (err) {
+        console.error('Failed to load BareMux module:', err);
+        return null;
+    }
+}
+
+// Initialize everything
+async function initialize() {
+    try {
+        console.log('🔧 Initializing Scramjet + BareMux...');
         
-        // Initialize Scramjet first
+        // 1. Initialize Scramjet first
         const { ScramjetController } = $scramjetLoadController();
         scramjet = new ScramjetController({
             files: {
@@ -29,36 +43,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         await scramjet.init();
         console.log('✅ Scramjet initialized');
 
-        // Wait for BareMux to load
-        let attempts = 0;
-        while (!window.BareMuxLoaded && attempts < 20) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-
-        if (!window.BareMuxLoaded) {
-            console.warn('⚠️ BareMux failed to load, continuing without it');
-            isInitialized = true;
-            return;
-        }
-
-        // Initialize BareMux connection
-        try {
-            connection = new window.BareMux.BareMuxConnection("/baremux/worker.js");
+        // 2. Load BareMux module
+        const BareMuxModule = await waitForBareMux();
+        
+        if (BareMuxModule && BareMuxModule.BareMuxConnection) {
+            // 3. Create BareMux connection
+            connection = new BareMuxModule.BareMuxConnection("/baremux/worker.js");
             console.log('✅ BareMux connection created');
-        } catch (err) {
-            console.warn('⚠️ BareMux connection failed:', err);
+            
+            // 4. Set up WISP transport
+            const wispUrl = (location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/wisp/";
+            
+            try {
+                await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+                console.log('✅ Transport configured:', wispUrl);
+            } catch (err) {
+                console.warn('⚠️ Transport setup warning (continuing anyway):', err);
+            }
+        } else {
+            console.warn('⚠️ BareMux not available, using pure Scramjet');
         }
 
-        isInitialized = true;
-        console.log('✅ All systems ready!');
+        isReady = true;
+        console.log('✅ System ready!');
 
     } catch (error) {
         console.error('❌ Initialization error:', error);
-        showStatus('Initialization failed: ' + error.message, 'error');
+        showStatus('Init failed: ' + error.message, 'error');
+        // Set ready anyway - pure Scramjet might still work
+        isReady = true;
     }
+}
 
-    // Enter key support
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+} else {
+    initialize();
+}
+
+// Also add enter key support when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('sj-address');
     if (input) {
         input.addEventListener('keypress', (e) => {
@@ -71,6 +96,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function showStatus(message, type) {
     const statusEl = document.getElementById('statusMsg');
+    if (!statusEl) return;
+    
     statusEl.className = `status ${type}`;
     statusEl.style.display = 'block';
     
@@ -122,9 +149,9 @@ async function launchCustomUrl() {
 
 async function launchNowGG(targetUrl) {
     try {
-        // Check if initialized
-        if (!isInitialized || !scramjet) {
-            showStatus('Still initializing... please wait 5 seconds', 'error');
+        // Check if ready
+        if (!isReady || !scramjet) {
+            showStatus('Still initializing... wait 5 seconds', 'error');
             return;
         }
 
@@ -133,43 +160,15 @@ async function launchNowGG(targetUrl) {
         // Register service worker
         try {
             await registerSW();
-            console.log('✅ Service worker ready');
+            console.log('✅ Service worker registered');
         } catch (err) {
             showStatus('Service worker failed!', 'error');
             console.error(err);
             return;
         }
 
-        // Wait for service worker to be fully active
+        // Wait a bit for SW to activate
         await new Promise(resolve => setTimeout(resolve, 1000));
-
-        showStatus('Setting up transport...', 'loading');
-
-        // Set up transport only if connection exists
-        if (connection) {
-            try {
-                const wispUrl =
-                    (location.protocol === "https:" ? "wss" : "ws") +
-                    "://" +
-                    location.host +
-                    "/wisp/";
-
-                console.log('🔗 WISP URL:', wispUrl);
-
-                // Check current transport
-                const currentTransport = await connection.getTransport();
-                console.log('📡 Current transport:', currentTransport);
-
-                // Set transport if different
-                if (currentTransport !== "/epoxy/index.mjs") {
-                    await connection.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
-                    console.log('✅ Transport set to Epoxy');
-                }
-            } catch (err) {
-                console.warn('⚠️ Transport setup warning:', err);
-                // Continue anyway
-            }
-        }
 
         showStatus('Launching game...', 'loading');
 
@@ -183,7 +182,7 @@ async function launchNowGG(targetUrl) {
         console.log('🎮 Loading game:', targetUrl);
         console.log('🔗 Encoded URL:', encodedUrl);
 
-        // Small delay for effect
+        // Small delay
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Show iframe and load game
