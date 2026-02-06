@@ -200,3 +200,7 @@ async function launchNowGG(targetUrl) {
         showStatus(`Error: ${error.message}`, 'error');
     }
 }
+
+// Make functions globally accessible for onclick handlers
+window.launchGame = launchGame;
+window.launchCustomUrl = launchCustomUrl;
