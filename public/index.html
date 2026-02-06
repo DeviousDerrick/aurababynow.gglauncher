@@ -153,6 +153,14 @@
                 <div class="game-icon">🐾</div>
                 <div>Paws.Go</div>
             </button>
+            <button class="game-card" onclick="launchGame('stumble-guys')">
+                <div class="game-icon">🏃</div>
+                <div>Stumble Guys</div>
+            </button>
+            <button class="game-card" onclick="launchGame('hill-climb')">
+                <div class="game-icon">🏔️</div>
+                <div>Hill Climb</div>
+            </button>
         </div>
 
         <div class="custom-url">
@@ -178,20 +186,7 @@
     <iframe id="sj-frame"></iframe>
 
     <script src="/scram/scramjet.all.js"></script>
-    <script src="/baremux/index.js" type="module"></script>
-    <script src="/epoxy/index.js" type="module"></script>
-    <script>
-        // Make BareMux available globally
-        window.BareMuxLoaded = false;
-        import('/baremux/index.mjs').then(module => {
-            window.BareMux = module;
-            window.BareMuxLoaded = true;
-            console.log('✅ BareMux library loaded');
-        }).catch(err => {
-            console.error('❌ Failed to load BareMux:', err);
-        });
-    </script>
     <script src="register-sw.js" defer></script>
-    <script src="index.js" defer></script>
+    <script type="module" src="index.js"></script>
 </body>
 </html>
