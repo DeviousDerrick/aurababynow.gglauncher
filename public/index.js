@@ -4,8 +4,8 @@
 const GAME_URLS = {
     'roblox': 'https://now.gg/apps/a/19900/b.html',
     'paws-go': 'https://now.gg/apps/sofish-games/8826/paws-go.html',
-    'stumble-guys': 'https://now.gg/apps/kitka-games/7999/stumble-guys.html',
-    'hill-climb': 'https://now.gg/apps/fingersoft/8363/hill-climb-racing.html'
+    'stumble-guys': 'https://now.gg/apps/a/10011/b.html',
+    'hill-climb': 'https://now.gg/apps/rivals/19911/rivals.html'
 };
 
 // Global variables
